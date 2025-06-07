@@ -1,9 +1,5 @@
-import torch
 import torch.nn
 import argparse
-import os
-import numpy as np
-from options import HiDDenConfiguration
 
 import utils
 from model.hidden import *
@@ -40,9 +36,9 @@ def main():
     args = parser.parse_args()
 
     train_options, hidden_config, noise_config = utils.load_options(args.options_file)
-    noiser = Noiser(noise_config)
+    noiser = Noiser(noise_config, device)
 
-    checkpoint = torch.load(args.checkpoint_file)
+    checkpoint = torch.load(args.checkpoint_file, map_location=device)
     hidden_net = Hidden(hidden_config, device, noiser, None)
     utils.model_from_checkpoint(hidden_net, checkpoint)
 
@@ -57,11 +53,11 @@ def main():
     message = torch.Tensor(np.random.choice([0, 1], (image_tensor.shape[0],
                                                     hidden_config.message_length))).to(device)
     losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
-    decoded_rounded = decoded_messages.detach().cpu().numpy().round().clip(0, 1)
+    decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
     message_detached = message.detach().cpu().numpy()
-    print('original: {}'.format(message_detached))
-    print('decoded : {}'.format(decoded_rounded))
-    print('error : {:.3f}'.format(np.mean(np.abs(decoded_rounded - message_detached))))
+    print(f'original: {message_detached}')
+    print(f'decoded : {decoded_rounded}')
+    print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
     utils.save_images(image_tensor.cpu(), encoded_images.cpu(), 'test', '.', resize_to=(256, 256))
 
     # bitwise_avg_err = np.sum(np.abs(decoded_rounded - message.detach().cpu().numpy()))/(image_tensor.shape[0] * messages.shape[1])
