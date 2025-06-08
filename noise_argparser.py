@@ -7,6 +7,7 @@ from noise_layers.dropout import Dropout
 from noise_layers.resize import Resize
 from noise_layers.quantization import Quantization
 from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.ilpf import IdealLowPassFilter
 
 
 def parse_pair(match_groups):
@@ -43,6 +44,11 @@ def parse_resize(resize_command):
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
     return Resize((min_ratio, max_ratio))
+
+def parse_ilpf(ilpf_command):
+    matches = re.match(r'ilpf\((\d+\.*\d*)\)', ilpf_command)
+    cutoff = matches.groups()[0]
+    return IdealLowPassFilter(float(cutoff))
 
 
 class NoiseArgParser(argparse.Action):
@@ -95,6 +101,8 @@ class NoiseArgParser(argparse.Action):
                 layers.append(parse_dropout(command))
             elif command[:len('resize')] == 'resize':
                 layers.append(parse_resize(command))
+            elif command[:len('ilpf')] == 'ilpf':
+                layers.append(parse_ilpf(command))
             elif command[:len('jpeg')] == 'jpeg':
                 layers.append('JpegPlaceholder')
             elif command[:len('quant')] == 'quant':
