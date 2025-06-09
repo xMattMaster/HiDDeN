@@ -24,7 +24,7 @@ class Noiser(nn.Module):
                                      f' Expected "JpegPlaceholder" or "QuantizationPlaceholder" but got {layer} instead')
             else:
                 self.noise_layers.append(layer)
-        # self.noise_layers = nn.Sequential(*noise_layers)
+        self.noise_layers = nn.Sequential(*noise_layers)
 
     def forward(self, encoded_and_cover):
         random_noise_layer = np.random.choice(self.noise_layers, 1)[0]

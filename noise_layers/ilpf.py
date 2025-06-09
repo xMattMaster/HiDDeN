@@ -4,8 +4,7 @@ import torch.nn as nn
 
 class IdealLowPassFilter(nn.Module):
     """
-    This module allows to combine different noise layers into a sequential noise module. The
-    configuration and the sequence of the noise layers is controlled by the noise_config parameter.
+    Applies an ideal low-pass filter to the input signal.
     """
     def __init__(self, cutoff_frequency):
         super(IdealLowPassFilter, self).__init__()

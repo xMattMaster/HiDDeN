@@ -1,3 +1,5 @@
+import os
+
 import torch.nn
 import argparse
 import matplotlib.pyplot as plt
@@ -6,6 +8,8 @@ from skimage.color import rgb2hsv, rgb2gray
 import utils
 from model.hidden import *
 from noise_layers.ilpf import IdealLowPassFilter
+from noise_layers.gaussian import GaussianFilter
+from noise_layers.identity import Identity
 from noise_layers.noiser import Noiser
 from PIL import Image
 import torchvision.transforms.functional as TF
@@ -139,33 +143,55 @@ def main():
     args = parser.parse_args()
 
     train_options, hidden_config, noise_config = utils.load_options(args.options_file)
-    noiser = Noiser([IdealLowPassFilter(0.5)], device)
+    # noiser = Noiser(["JpegPlaceholder"], device)
+    noiser = Noiser([GaussianFilter(kernel_size=3, sigma=1)], device)
     # noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(args.checkpoint_file, map_location=device)
     hidden_net = Hidden(hidden_config, device, noiser, None)
     utils.model_from_checkpoint(hidden_net, checkpoint)
 
-    errors = []
-    for i in range(100):
-        image_pil = Image.open(args.source_image)
-        image = randomCrop(np.array(image_pil), hidden_config.H, hidden_config.W)
-        image_tensor = TF.to_tensor(image).to(device)
-        image_tensor = image_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
-        image_tensor.unsqueeze_(0)
+    # message_errors = []
+    # total_losses = []
+    # encoder_mse_losses = []
+    # decoder_mse_losses = []
+    # adversarial_bce_losses = []
+    # discriminator_cover_bce_losses = []
+    # discriminator_encoded_bce_losses = []
+    # for image_dir in os.listdir("dataset/test/test/"):
+    image_pil = Image.open(args.source_image)
+    # image_pil = Image.open("dataset/test/test/" + image_dir)
+    image = randomCrop(np.array(image_pil), hidden_config.H, hidden_config.W)
+    image_tensor = TF.to_tensor(image).to(device)
+    image_tensor = image_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
+    image_tensor.unsqueeze_(0)
 
-        # for t in range(args.times):
-        message = torch.Tensor(np.random.choice([0, 1], (image_tensor.shape[0],
-                                                        hidden_config.message_length))).to(device)
-        losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
-        decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
-        message_detached = message.detach().cpu().numpy()
-        print(f'original: {message_detached}')
-        print(f'decoded : {decoded_rounded}')
-        print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
-        errors.append(np.mean(np.abs(decoded_rounded - message_detached)))
-        print(f'losses: {losses}')
-    print("Mean error:", np.mean(errors))
+    # for t in range(args.times):
+    message = torch.Tensor(np.random.choice([0, 1], (image_tensor.shape[0],
+                                                    hidden_config.message_length))).to(device)
+    losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
+    decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
+    message_detached = message.detach().cpu().numpy()
+    print(f'original: {message_detached}')
+    print(f'decoded : {decoded_rounded}')
+    print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
+    print(f'losses: {losses}')
+    # message_errors.append(np.mean(np.abs(decoded_rounded - message_detached)))
+    # total_losses.append(losses["loss"])
+    # encoder_mse_losses.append(losses["encoder_mse"])
+    # decoder_mse_losses.append(losses["dec_mse"])
+    # adversarial_bce_losses.append(losses["adversarial_bce"])
+    # discriminator_cover_bce_losses.append(losses["discr_cover_bce"])
+    # discriminator_encoded_bce_losses.append(losses["discr_encod_bce"])
+
+    # print("Test results (means):")
+    # print("Bitwise error:", np.mean(message_errors))
+    # print("Encoder MSE:", np.mean(encoder_mse_losses))
+    # print("Decoder MSE:", np.mean(decoder_mse_losses))
+    # print("Adversarial BCE:", np.mean(adversarial_bce_losses))
+    # print("Discriminator BCE (Cover):", np.mean(discriminator_cover_bce_losses))
+    # print("Discriminator BCE (Encoded):", np.mean(discriminator_encoded_bce_losses))
+
     image = image / 255
 
     # TODO: OBLITERATE
@@ -187,7 +213,7 @@ def main():
     # noised_image_pil = Image.fromarray(np.uint8(noised_image_pil * 255))
     # noised_image_pil.save("noised_image.png")
 
-    images_diff_plot(image, encoded_image)
+    # images_diff_plot(image, encoded_image)
     plt.figure()
     plt.subplot(1, 2, 1)
     plt.imshow(image)
@@ -196,8 +222,8 @@ def main():
     plt.imshow(noised_image)
     plt.title("Noised")
     plt.show()
-    ftransform_rgb_plot(image, encoded_image)
-    ftransform_hsv_plot(image, encoded_image)
+    # ftransform_rgb_plot(image, encoded_image)
+    # ftransform_hsv_plot(image, encoded_image)
 
     # bitwise_avg_err = np.sum(np.abs(decoded_rounded - message.detach().cpu().numpy()))/(image_tensor.shape[0] * messages.shape[1])
 
