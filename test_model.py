@@ -3,6 +3,7 @@ import argparse
 import matplotlib.pyplot as plt
 from skimage.color import rgb2hsv, rgb2gray
 
+import os
 import utils
 from model.hidden import *
 from noise_layers.ilpf import IdealLowPassFilter
@@ -139,47 +140,79 @@ def main():
     args = parser.parse_args()
 
     train_options, hidden_config, noise_config = utils.load_options(args.options_file)
-    noiser = Noiser([IdealLowPassFilter(0.5)], device)
-    # noiser = Noiser(noise_config, device)
+    #noiser = Noiser([IdealLowPassFilter(0.5)], device)
+    noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(args.checkpoint_file, map_location=device)
     hidden_net = Hidden(hidden_config, device, noiser, None)
     utils.model_from_checkpoint(hidden_net, checkpoint)
 
     errors = []
-    for i in range(100):
-        image_pil = Image.open(args.source_image)
+
+    red_psnr_list = []
+    green_psnr_list = []
+    blue_psnr_list = []
+
+    images = os.listdir("/kaggle/data/test/test_class/")
+    
+    for image_path in images:
+        image_pil = Image.open(image_path)
         image = randomCrop(np.array(image_pil), hidden_config.H, hidden_config.W)
         image_tensor = TF.to_tensor(image).to(device)
         image_tensor = image_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
         image_tensor.unsqueeze_(0)
 
-        # for t in range(args.times):
         message = torch.Tensor(np.random.choice([0, 1], (image_tensor.shape[0],
                                                         hidden_config.message_length))).to(device)
         losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
         decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
         message_detached = message.detach().cpu().numpy()
-        print(f'original: {message_detached}')
-        print(f'decoded : {decoded_rounded}')
-        print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
+        # print(f'original: {message_detached}')
+        # print(f'decoded : {decoded_rounded}')
+        # print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
         errors.append(np.mean(np.abs(decoded_rounded - message_detached)))
-        print(f'losses: {losses}')
+        # print(f'losses: {losses}')
+
+        encoded_images = image_tensor_to_numpy(encoded_images)
+
+        image = image / 255
+
+        red_mse = np.mean((image[:,:, 0] - encoded_images[:,:,0]) ** 2)
+        green_mse = np.mean((image[:,:, 1] - encoded_images[:,:,1]) ** 2)
+        blue_mse = np.mean((image[:,:, 2] - encoded_images[:,:,2]) ** 2)
+
+        red_psnr = 10 * np.log10(1 / red_mse)
+        green_psnr = 10 * np.log10(1 / green_mse)
+        blue_psnr = 10 * np.log10(1 / blue_mse)
+
+        red_psnr_list.append(red_psnr)
+        green_psnr_list.append(green_psnr)
+        blue_psnr_list.append(blue_psnr)
+
     print("Mean error:", np.mean(errors))
-    image = image / 255
+
+    psnr_red_mean = np.mean(red_psnr_list)
+    psnr_green_mean = np.mean(green_psnr_list)
+    psnr_blue_mean = np.mean(blue_psnr_list)
+
+    all_psnr = [psnr_red_mean, psnr_green_mean, psnr_blue_mean]
+
+    np.savetxt("psnr_means.txt", all_psnr)
+
+    # image = image / 255
 
     # TODO: OBLITERATE
     # image_pil = Image.fromarray(np.uint8(image * 255))
     # image_pil.save("cover_image.png")
 
-    encoded_image = image_tensor_to_numpy(encoded_images)
+   # encoded_image = image_tensor_to_numpy(encoded_images)
 
     # TODO: OBLITERATE
     # encoded_image_pil = np.clip(encoded_image, 0, 1)
     # encoded_image_pil = Image.fromarray(np.uint8(encoded_image_pil * 255))
     # encoded_image_pil.save("encoded_image.png")
 
-    noised_image = image_tensor_to_numpy(noised_images)
+   # noised_image = image_tensor_to_numpy(noised_images)
 
     # TODO: OBLITERATE
     # noised_image_pil = ((noised_image - np.min(noised_image)) /
@@ -187,17 +220,17 @@ def main():
     # noised_image_pil = Image.fromarray(np.uint8(noised_image_pil * 255))
     # noised_image_pil.save("noised_image.png")
 
-    images_diff_plot(image, encoded_image)
-    plt.figure()
-    plt.subplot(1, 2, 1)
-    plt.imshow(image)
-    plt.title("Original")
-    plt.subplot(1, 2, 2)
-    plt.imshow(noised_image)
-    plt.title("Noised")
-    plt.show()
-    ftransform_rgb_plot(image, encoded_image)
-    ftransform_hsv_plot(image, encoded_image)
+    # images_diff_plot(image, encoded_image)
+    # plt.figure()
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(image)
+    # plt.title("Original")
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(noised_image)
+    # plt.title("Noised")
+    # plt.show()
+    # ftransform_rgb_plot(image, encoded_image)
+    # ftransform_hsv_plot(image, encoded_image)
 
     # bitwise_avg_err = np.sum(np.abs(decoded_rounded - message.detach().cpu().numpy()))/(image_tensor.shape[0] * messages.shape[1])
 
