@@ -12,7 +12,7 @@ class Noiser(nn.Module):
     """
     def __init__(self, noise_layers: list, device):
         super(Noiser, self).__init__()
-        self.noise_layers = [] #[Identity()]
+        self.noise_layers = [] # Identity()
         for layer in noise_layers:
             if type(layer) is str:
                 if layer == 'JpegPlaceholder':
