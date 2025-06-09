@@ -1,9 +1,11 @@
+import os
+from collections import defaultdict
 import torch.nn
 import argparse
 import matplotlib.pyplot as plt
 from skimage.color import rgb2hsv, rgb2gray
 
-import os
+
 import utils
 from model.hidden import *
 from noise_layers.ilpf import IdealLowPassFilter
@@ -140,8 +142,8 @@ def main():
     args = parser.parse_args()
 
     train_options, hidden_config, noise_config = utils.load_options(args.options_file)
-    #noiser = Noiser([IdealLowPassFilter(0.5)], device)
-    noiser = Noiser(noise_config, device)
+    noiser = Noiser(["JpegPlaceholder"], device)
+    # noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(args.checkpoint_file, map_location=device)
     hidden_net = Hidden(hidden_config, device, noiser, None)
@@ -152,6 +154,8 @@ def main():
     red_psnr_list = []
     green_psnr_list = []
     blue_psnr_list = []
+
+    total_losses = []
 
     images = os.listdir("/kaggle/data/test/test_class/")
     
@@ -167,10 +171,11 @@ def main():
         losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
         decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
         message_detached = message.detach().cpu().numpy()
-        # print(f'original: {message_detached}')
-        # print(f'decoded : {decoded_rounded}')
-        # print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
+        print(f'original: {message_detached}')
+        print(f'decoded : {decoded_rounded}')
+        print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
         errors.append(np.mean(np.abs(decoded_rounded - message_detached)))
+        total_losses.append(losses)
         # print(f'losses: {losses}')
 
         encoded_images = image_tensor_to_numpy(encoded_images)
@@ -196,6 +201,21 @@ def main():
     psnr_blue_mean = np.mean(blue_psnr_list)
 
     all_psnr = [psnr_red_mean, psnr_green_mean, psnr_blue_mean]
+    
+    # Initialize a defaultdict to accumulate sums and counts
+    sums = defaultdict(float)
+    counts = defaultdict(int)
+
+    # Accumulate values
+    for d in total_losses:
+        for key, value in d.items():
+            sums[key] += value
+            counts[key] += 1
+
+    # Calculate means
+    means = {key: sums[key] / counts[key] for key in sums}
+
+    print(means)
 
     np.savetxt("psnr_means.txt", all_psnr)
 
