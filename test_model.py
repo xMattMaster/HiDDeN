@@ -156,7 +156,7 @@ def main():
     images = os.listdir("/kaggle/data/test/test_class/")
     
     for image_path in images:
-        image_pil = Image.open(image_path)
+        image_pil = Image.open(os.path.join("/kaggle/data/test/test_class/", image_path))
         image = randomCrop(np.array(image_pil), hidden_config.H, hidden_config.W)
         image_tensor = TF.to_tensor(image).to(device)
         image_tensor = image_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
