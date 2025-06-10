@@ -1,4 +1,4 @@
-import torchvision
+from torchvision.transforms import GaussianBlur
 import torch.nn as nn
 
 class GaussianFilter(nn.Module):
@@ -12,6 +12,5 @@ class GaussianFilter(nn.Module):
 
     def forward(self, noised_and_cover):
         noised_image = noised_and_cover[0]
-        noised_and_cover[0] = (torchvision.transforms.GaussianBlur
-                               (kernel_size=self.kernel_size, sigma=self.sigma)(noised_image))
+        noised_and_cover[0] = GaussianBlur(kernel_size=self.kernel_size, sigma=self.sigma)(noised_image)
         return noised_and_cover

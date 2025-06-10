@@ -7,7 +7,7 @@ class Decoder(nn.Module):
     """
     Decoder module. Receives a watermarked image and extracts the watermark.
     The input image may have various kinds of noise applied to it,
-    such as Crop, JpegCompression, and so on. See Noise layers for more.
+    such as Crop, JpegMask, and so on. See Noise layers for more.
     """
     def __init__(self, config: HiDDenConfiguration):
 

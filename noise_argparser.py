@@ -6,7 +6,7 @@ from noise_layers.identity import Identity
 from noise_layers.dropout import Dropout
 from noise_layers.resize import Resize
 from noise_layers.quantization import Quantization
-from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.jpeg_compression import JpegMask
 from noise_layers.ilpf import IdealLowPassFilter
 
 
@@ -29,7 +29,6 @@ def parse_cropout(cropout_command):
     matches = re.match(r'cropout\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)', cropout_command)
     (hmin, hmax), (wmin, wmax) = parse_pair(matches.groups())
     return Cropout((hmin, hmax), (wmin, wmax))
-
 
 def parse_dropout(dropout_command):
     matches = re.match(r'dropout\((\d+\.*\d*,\d+\.*\d*)\)', dropout_command)

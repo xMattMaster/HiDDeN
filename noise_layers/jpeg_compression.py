@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.transforms.v2 import JPEG
 
 def gen_filters(size_x: int, size_y: int, dct_or_idct_fun: callable) -> np.ndarray:
     tile_size_x = 8
@@ -62,9 +63,9 @@ def yuv2rgb(image_yuv, image_rgb_out):
     image_rgb_out[:, 2, :, :] = image_yuv[:, 0, :, :].clone() + 2.03211 * image_yuv[:, 1, :, :].clone()
 
 
-class JpegCompression(nn.Module):
+class JpegMask(nn.Module):
     def __init__(self, device, yuv_keep_weights = (25, 9, 9)):
-        super(JpegCompression, self).__init__()
+        super(JpegMask, self).__init__()
         self.device = device
 
         self.dct_conv_weights = torch.tensor(gen_filters(8, 8, dct_coeff), dtype=torch.float32).to(self.device)
@@ -157,4 +158,19 @@ class JpegCompression(nn.Module):
         # un-pad
         noised_and_cover[0] = image_ret_padded[:, :, :image_ret_padded.shape[2]-pad_height, :image_ret_padded.shape[3]-pad_width].clone()
 
+        return noised_and_cover
+
+class JpegReal(nn.Module):
+    """
+    Applies JPEG compression with a given quality factor.
+    """
+    def __init__(self, quality):
+        super(JpegReal, self).__init__()
+        self.quality = quality
+
+    def forward(self, noised_and_cover):
+        noised_image = noised_and_cover[0]
+        noised_image = torch.Tensor.to((noised_image + 1) * 255 / 2, torch.uint8)
+        noised_image = JPEG(quality=self.quality)(noised_image)
+        noised_and_cover[0] = (torch.Tensor.to(noised_image, torch.float32) * 2 / 255) - 1
         return noised_and_cover
