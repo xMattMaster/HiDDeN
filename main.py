@@ -52,8 +52,6 @@ def main():
                                  help='The directory where the data is stored. Specify a value only if you want to override the previous value.')
     continue_parser.add_argument('--epochs', '-e', required=False, type=int,
                                 help='Number of epochs to run the simulation. Specify a value only if you want to override the previous value.')
-    # continue_parser.add_argument('--tensorboard', action='store_true',
-    #                             help='Override the previous setting regarding tensorboard logging.')
 
     args = parent_parser.parse_args()
     checkpoint = None
@@ -118,13 +116,9 @@ def main():
     if (args.command == 'new' and args.tensorboard) or \
             (args.command == 'continue' and os.path.isdir(os.path.join(this_run_folder, 'tb-logs'))):
         logging.info('Tensorboard is enabled. Creating logger.')
-        from tensorboard_logger import TensorBoardLogger
-        tb_logger = TensorBoardLogger(os.path.join(this_run_folder, 'tb-logs'))
-    else:
-        tb_logger = None
-
+        
     noiser = Noiser(noise_config, device)
-    model = Hidden(hidden_config, device, noiser, tb_logger)
+    model = Hidden(hidden_config, device, noiser, None)
 
     if args.command == 'continue':
         # if we are continuing, we have to load the model params
@@ -140,7 +134,7 @@ def main():
     logging.info('\nTraining train_options:\n')
     logging.info(pprint.pformat(vars(train_options)))
 
-    train(model, device, hidden_config, train_options, this_run_folder, tb_logger)
+    train(model, device, hidden_config, train_options, this_run_folder, None)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,5 @@
 import os
 
-import torch.nn
 import argparse
 import matplotlib.pyplot as plt
 from skimage.color import rgb2hsv, rgb2gray
@@ -99,7 +98,7 @@ def main():
 
     args = parser.parse_args()
 
-    train_options, hidden_config, noise_config = utils.load_options(args.options_file)
+    _, hidden_config, noise_config = utils.load_options(args.options_file)
     noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(args.checkpoint_file, map_location=device)
@@ -187,7 +186,7 @@ def main():
         image_tensor.unsqueeze_(0)
         message = torch.Tensor(np.random.choice([0, 1], (image_tensor.shape[0],
                                                         hidden_config.message_length))).to(device)
-        losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
+        losses, (encoded_images, _, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
         decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
         message_detached = message.detach().cpu().numpy()
         message_errors.append(np.mean(np.abs(decoded_rounded - message_detached)))
