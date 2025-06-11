@@ -17,7 +17,7 @@ class IdealLowPassFilter(nn.Module):
         n = torch.fft.fftshift(torch.fft.fftfreq(noised_transform.size(dim=3)))
         l, k = torch.meshgrid(n, m)
         d = torch.sqrt(k ** 2 + l ** 2)
-        r = torch.abs(d) <= self.cutoff
-        noised_transform = noised_transform * r
+        mask = torch.abs(d) <= self.cutoff
+        noised_transform = mask * noised_transform
         noised_and_cover[0] = torch.real(torch.fft.ifft2(torch.fft.ifftshift(noised_transform)))
         return noised_and_cover

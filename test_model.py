@@ -7,7 +7,7 @@ from skimage.color import rgb2hsv, rgb2gray
 
 import utils
 from model.hidden import *
-from noise_layers.jpeg_compression import JpegReal
+from noise_layers.gaussian import GaussianLPF
 from noise_layers.noiser import Noiser
 from PIL import Image
 import torchvision.transforms.functional as TF
@@ -22,7 +22,6 @@ def randomCrop(img, height, width):
     if (img.shape[0] - height) > 0:
         y = np.random.randint(0, img.shape[0] - height)
     img = img[y:y+height, x:x+width]
-    # img = img[148:148+128, 293:293+128]
     return img
 
 
@@ -84,38 +83,6 @@ def ftransform_rgb_plot(cover_image, encoded_image):
     plt.show()
 
 
-def ftransform_hsv_plot(cover_image, encoded_image):
-    cover_hsv, encoded_hsv = rgb2hsv(cover_image), rgb2hsv(encoded_image)
-
-    cover_hue_transform = np.fft.fftshift(np.fft.fft2(cover_hsv[:, :, 0]))
-    cover_saturation_transform = np.fft.fftshift(np.fft.fft2(cover_hsv[:, :, 1]))
-    cover_value_transform = np.fft.fftshift(np.fft.fft2(cover_hsv[:, :, 2]))
-    encoded_hue_transform = np.fft.fftshift(np.fft.fft2(encoded_hsv[:, :, 0]))
-    encoded_saturation_transform = np.fft.fftshift(np.fft.fft2(encoded_hsv[:, :, 1]))
-    encoded_value_transform = np.fft.fftshift(np.fft.fft2(encoded_hsv[:, :, 2]))
-
-    plt.figure(figsize=(10, 7))
-    plt.subplot(2, 3, 1)
-    plt.imshow(np.log(np.abs(cover_hue_transform) + 1), cmap="jet", extent=(-0.5, 0.5, 0.5, -0.5))
-    plt.title("Cover - Hue")
-    plt.subplot(2, 3, 2)
-    plt.imshow(np.log(np.abs(cover_saturation_transform) + 1), cmap="jet", extent=(-0.5, 0.5, 0.5, -0.5))
-    plt.title("Cover - Saturation")
-    plt.subplot(2, 3, 3)
-    plt.imshow(np.log(np.abs(cover_value_transform) + 1), cmap="jet", extent=(-0.5, 0.5, 0.5, -0.5))
-    plt.title("Cover - Value")
-    plt.subplot(2, 3, 4)
-    plt.imshow(np.log(np.abs(encoded_hue_transform) + 1), cmap="jet", extent=(-0.5, 0.5, 0.5, -0.5))
-    plt.title("Encoded - Hue")
-    plt.subplot(2, 3, 5)
-    plt.imshow(np.log(np.abs(encoded_saturation_transform) + 1), cmap="jet", extent=(-0.5, 0.5, 0.5, -0.5))
-    plt.title("Encoded - Saturation")
-    plt.subplot(2, 3, 6)
-    plt.imshow(np.log(np.abs(encoded_value_transform) + 1), cmap="jet", extent=(-0.5, 0.5, 0.5, -0.5))
-    plt.title("Encoded - Value")
-    plt.show()
-
-
 def main():
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -133,9 +100,7 @@ def main():
     args = parser.parse_args()
 
     train_options, hidden_config, noise_config = utils.load_options(args.options_file)
-    # noiser = Noiser(["JpegPlaceholder"], device)
-    noiser = Noiser([JpegReal(50)], device)
-    # noiser = Noiser(noise_config, device)
+    noiser = Noiser(noise_config, device)
 
     checkpoint = torch.load(args.checkpoint_file, map_location=device)
     hidden_net = Hidden(hidden_config, device, noiser, None)
@@ -177,6 +142,18 @@ def main():
     # noised_image_pil = Image.fromarray(np.uint8(noised_image_pil * 255))
     # noised_image_pil.save("noised_image.png")
     #
+    # red_mse = np.mean((image[:, :, 0] - encoded_image[:, :, 0]) ** 2)
+    # green_mse = np.mean((image[:, :, 1] - encoded_image[:, :, 1]) ** 2)
+    # blue_mse = np.mean((image[:, :, 2] - encoded_image[:, :, 2]) ** 2)
+    #
+    # red_psnr = 10 * np.log10(1 / red_mse)
+    # green_psnr = 10 * np.log10(1 / green_mse)
+    # blue_psnr = 10 * np.log10(1 / blue_mse)
+    #
+    # print("PSNR (R):", red_psnr)
+    # print("PSNR (G):", green_psnr)
+    # print("PSNR (B):", blue_psnr)
+    #
     # images_diff_plot(image, encoded_image)
     # plt.figure()
     # plt.subplot(1, 2, 1)
@@ -187,11 +164,10 @@ def main():
     # plt.title("Noised")
     # plt.show()
     # ftransform_rgb_plot(image, encoded_image)
-    # ftransform_hsv_plot(image, encoded_image)
 
 
     """
-    Test on the whole training set
+    Test on the whole test set
     """
     message_errors = []
     total_losses = []
@@ -200,8 +176,11 @@ def main():
     adversarial_bce_losses = []
     discriminator_cover_bce_losses = []
     discriminator_encoded_bce_losses = []
+    red_psnr_values = []
+    green_psnr_values = []
+    blue_psnr_values = []
     for image_dir in os.listdir("dataset/test/test/"):
-        image_pil = Image.open("dataset/test/test/" + image_dir)
+        image_pil = Image.open(os.path.join("dataset/test/test/", image_dir))
         image = randomCrop(np.array(image_pil), hidden_config.H, hidden_config.W)
         image_tensor = TF.to_tensor(image).to(device)
         image_tensor = image_tensor * 2 - 1  # transform from [0, 1] to [-1, 1]
@@ -219,6 +198,20 @@ def main():
         discriminator_cover_bce_losses.append(losses["discr_cover_bce"])
         discriminator_encoded_bce_losses.append(losses["discr_encod_bce"])
 
+        image = image / 255
+        encoded_images = image_tensor_to_numpy(encoded_images)
+        red_mse = np.mean((image[:, :, 0] - encoded_images[:, :, 0]) ** 2)
+        green_mse = np.mean((image[:, :, 1] - encoded_images[:, :, 1]) ** 2)
+        blue_mse = np.mean((image[:, :, 2] - encoded_images[:, :, 2]) ** 2)
+
+        red_psnr = 10 * np.log10(1 / red_mse)
+        green_psnr = 10 * np.log10(1 / green_mse)
+        blue_psnr = 10 * np.log10(1 / blue_mse)
+
+        red_psnr_values.append(red_psnr)
+        green_psnr_values.append(green_psnr)
+        blue_psnr_values.append(blue_psnr)
+
     print("Test results (means):")
     print("Bitwise error:", np.mean(message_errors))
     print("Encoder MSE:", np.mean(encoder_mse_losses))
@@ -226,6 +219,9 @@ def main():
     print("Adversarial BCE:", np.mean(adversarial_bce_losses))
     print("Discriminator BCE (Cover):", np.mean(discriminator_cover_bce_losses))
     print("Discriminator BCE (Encoded):", np.mean(discriminator_encoded_bce_losses))
+    print("PSNR (R):", np.mean(red_psnr_values))
+    print("PSNR (G):", np.mean(green_psnr_values))
+    print("PSNR (B):", np.mean(blue_psnr_values))
 
 
 if __name__ == '__main__':
