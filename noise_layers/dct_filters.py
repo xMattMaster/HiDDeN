@@ -2,13 +2,6 @@ import math
 import numpy as np
 
 
-def delta(a: int, b: int) -> int:
-    if a == b:
-        return 1
-    else:
-        return 0
-
-
 def dct_coefficient(n, k, N):
     """Discrete cosine coefficient
     Coefficient for dct
@@ -21,7 +14,7 @@ def dct_coefficient(n, k, N):
 
 
 def idct_coefficient(n, k, N):
-    return (delta(0, n) * (- 1 / 2) + math.cos(
+    return (int(0 == n) * (- 1 / 2) + math.cos(
         np.pi / N * (k + 1. / 2.) * n)) * math.sqrt(1 / (2. * N))
 
 
@@ -52,7 +45,8 @@ class DctFilterGenerator:
         filters = self.generate_per_channel_filter(self.tile_size_x, self.tile_size_y, dct_coefficient)
         result = np.zeros(
             (self.channels, self.tile_size_x, self.tile_size_y, self.channels, self.tile_size_x * self.tile_size_y),
-            dtype=np.float32)
+            dtype=np.float32
+        )
         for channel in range(self.channels):
             result[channel, :, :, channel, :] = filters[:, :, :]
         return result
@@ -62,7 +56,8 @@ class DctFilterGenerator:
         filters = self.generate_per_channel_filter(self.tile_size_x, self.tile_size_y, idct_coefficient)
         result = np.zeros(
             (self.channels, self.tile_size_x, self.tile_size_y, self.channels, self.tile_size_x * self.tile_size_x),
-            dtype=np.float32)
+            dtype=np.float32
+        )
         for channel in range(self.channels):
             result[channel, :, :, channel, :] = filters[:, :, :]
         return result
@@ -72,7 +67,8 @@ class DctFilterGenerator:
         mask = np.zeros((N, N), dtype=np.uint8)
 
         index_order = sorted(((x, y) for x in range(N) for y in range(N)),
-                             key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1]))
+            key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1])
+        )
 
         for i, j in index_order[0:count]:
             mask[i, j] = 1

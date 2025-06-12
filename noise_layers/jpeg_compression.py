@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.transforms.v2 import JPEG
 
+
 def gen_filters(size_x: int, size_y: int, dct_or_idct_fun: callable) -> np.ndarray:
     tile_size_x = 8
     filters = np.zeros((size_x * size_y, size_x, size_y))
@@ -11,9 +12,7 @@ def gen_filters(size_x: int, size_y: int, dct_or_idct_fun: callable) -> np.ndarr
         for k_x in range(size_x):
             for n_y in range(size_y):
                 for n_x in range(size_x):
-                    filters[k_y * tile_size_x + k_x, n_y, n_x] = dct_or_idct_fun(n_y, k_y, size_y) * dct_or_idct_fun(n_x,
-                                                                                                            k_x,
-                                                                                                            size_x)
+                    filters[k_y * tile_size_x + k_x, n_y, n_x] = dct_or_idct_fun(n_y, k_y, size_y) * dct_or_idct_fun(n_x, k_x, size_x)
     return filters
 
 # def zigzag_indices(shape: (int, int), count):
@@ -31,9 +30,10 @@ def get_jpeg_yuv_filter_mask(image_shape: tuple, window_size: int, keep_count: i
     mask = np.zeros((window_size, window_size), dtype=np.uint8)
 
     index_order = sorted(((x, y) for x in range(window_size) for y in range(window_size)),
-                         key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1]))
+        key=lambda p: (p[0] + p[1], -p[1] if (p[0] + p[1]) % 2 else p[1])
+    )
 
-    for i, j in index_order[0:keep_count]:
+    for i, j in index_order[0: keep_count]:
         mask[i, j] = 1
 
     return np.tile(mask, (int(np.ceil(image_shape[0] / window_size)),
@@ -41,12 +41,12 @@ def get_jpeg_yuv_filter_mask(image_shape: tuple, window_size: int, keep_count: i
 
 
 def dct_coeff(n, k, N):
-    return np.cos(np.pi / N * (n + 1. / 2.) * k)
+    return np.cos(np.pi / N * (n + 0.5) * k)
 
 
 def idct_coeff(n, k, N):
-    return (int(0 == n) * (- 1 / 2) + np.cos(
-        np.pi / N * (k + 1. / 2.) * n)) * np.sqrt(1 / (2. * N))
+    return (int(0 == n) * (- 0.5) + np.cos(
+        np.pi / N * (k + 0.5) * n)) * np.sqrt(1 / (2. * N))
 
 
 def rgb2yuv(image_rgb, image_yuv_out):
@@ -84,7 +84,7 @@ class JpegMask(nn.Module):
 
     def create_mask(self, requested_shape):
         if self.jpeg_mask is None or requested_shape > self.jpeg_mask.shape[1:]:
-            self.jpeg_mask = torch.empty((3,) + requested_shape, device=self.device)
+            self.jpeg_mask = torch.empty((3, ) + requested_shape, device=self.device)
             for channel, weights_to_keep in enumerate(self.yuv_keep_weighs):
                 mask = torch.from_numpy(get_jpeg_yuv_filter_mask(requested_shape, 8, weights_to_keep))
                 self.jpeg_mask[channel] = mask
@@ -98,12 +98,12 @@ class JpegMask(nn.Module):
 
     def apply_conv(self, image, filter_type: str):
 
-        if filter_type == 'dct':
+        if filter_type == "dct":
             filters = self.dct_conv_weights
-        elif filter_type == 'idct':
+        elif filter_type == "idct":
             filters = self.idct_conv_weights
         else:
-            raise('Unknown filter_type value.')
+            raise("Unknown filter_type value.")
 
         image_conv_channels = []
         for channel in range(image.shape[1]):
@@ -143,14 +143,14 @@ class JpegMask(nn.Module):
         assert image_yuv.shape[3] % 8 == 0
 
         # apply dct
-        image_dct = self.apply_conv(image_yuv, 'dct')
+        image_dct = self.apply_conv(image_yuv, "dct")
         # get the jpeg-compression mask
         mask = self.get_mask(image_dct.shape[1:])
         # multiply the dct-ed image with the mask.
         image_dct_mask = torch.mul(image_dct, mask)
 
         # apply inverse dct (idct)
-        image_idct = self.apply_conv(image_dct_mask, 'idct')
+        image_idct = self.apply_conv(image_dct_mask, "idct")
         # transform from yuv to to rgb
         image_ret_padded = torch.empty_like(image_dct)
         yuv2rgb(image_idct, image_ret_padded)

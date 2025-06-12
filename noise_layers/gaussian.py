@@ -1,6 +1,7 @@
-from torchvision.transforms import GaussianBlur
-import torch.nn as nn
 import torch.fft
+import torch.nn as nn
+from torchvision.transforms import GaussianBlur
+
 
 class GaussianFilter(nn.Module):
     """

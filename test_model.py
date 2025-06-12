@@ -1,15 +1,13 @@
-import os
-
 import argparse
 import matplotlib.pyplot as plt
-from skimage.color import rgb2hsv, rgb2gray
-
-import utils
-from model.hidden import *
-from noise_layers.gaussian import GaussianLPF
-from noise_layers.noiser import Noiser
+import os
 from PIL import Image
+from skimage.color import rgb2gray
 import torchvision.transforms.functional as TF
+
+from model.hidden import *
+from noise_layers.noiser import Noiser
+import utils
 
 
 def randomCrop(img, height, width):
@@ -43,7 +41,7 @@ def images_diff_plot(cover_image, encoded_image):
                         (np.max(difference_image) - np.min(difference_image)))
 
     difference_image_pil = Image.fromarray(np.uint8(difference_image * 255))
-    difference_image_pil.save('difference_image.png')
+    difference_image_pil.save("difference_image.png")
 
     plt.figure(figsize=(10, 4))
     plt.subplot(1, 3, 1); plt.imshow(cover_image); plt.title("Cover")
@@ -84,17 +82,17 @@ def ftransform_rgb_plot(cover_image, encoded_image):
 
 def main():
     if torch.cuda.is_available():
-        device = torch.device('cuda')
+        device = torch.device("cuda")
     else:
-        device = torch.device('cpu')
+        device = torch.device("cpu")
 
-    parser = argparse.ArgumentParser(description='Test trained models')
-    parser.add_argument('--options-file', '-o', default='options-and-config.pickle', type=str,
-                        help='The file where the simulation options are stored.')
-    parser.add_argument('--checkpoint-file', '-c', required=True, type=str, help='Model checkpoint file')
-    parser.add_argument('--batch-size', '-b', default=12, type=int, help='The batch size.')
-    parser.add_argument('--source-image', '-s', required=True, type=str,
-                        help='The image to watermark')
+    parser = argparse.ArgumentParser(description="Test trained models")
+    parser.add_argument("--options-file", "-o", default="options-and-config.pickle", type=str,
+                        help="The file where the simulation options are stored.")
+    parser.add_argument("--checkpoint-file", "-c", required=True, type=str, help="Model checkpoint file")
+    parser.add_argument("--batch-size", "-b", default=12, type=int, help="The batch size.")
+    parser.add_argument("--source-image", "-s", required=True, type=str,
+                        help="The image to watermark")
 
     args = parser.parse_args()
 
@@ -121,10 +119,10 @@ def main():
     #     [image_tensor, message])
     # decoded_rounded = np.abs(decoded_messages.detach().cpu().numpy().round().clip(0, 1))
     # message_detached = message.detach().cpu().numpy()
-    # print(f'original: {message_detached}')
-    # print(f'decoded : {decoded_rounded}')
-    # print(f'error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}')
-    # print(f'losses: {losses}')
+    # print(f"original: {message_detached}")
+    # print(f"decoded : {decoded_rounded}")
+    # print(f"error : {np.mean(np.abs(decoded_rounded - message_detached)):.3f}")
+    # print(f"losses: {losses}")
     #
     # image = image / 255
     # image_pil = Image.fromarray(np.uint8(image * 255))
@@ -223,5 +221,5 @@ def main():
     print("PSNR (B):", np.mean(blue_psnr_values))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

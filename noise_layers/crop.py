@@ -1,5 +1,5 @@
-import torch.nn as nn
 import numpy as np
+import torch.nn as nn
 
 
 def random_float(min, max):
@@ -67,9 +67,10 @@ class Crop(nn.Module):
         h_start, h_end, w_start, w_end = get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
 
         noised_and_cover[0] = noised_image[
-               :,
-               :,
-               h_start: h_end,
-               w_start: w_end].clone()
+            :,
+            :,
+            h_start: h_end,
+            w_start: w_end
+        ].clone()
 
         return noised_and_cover

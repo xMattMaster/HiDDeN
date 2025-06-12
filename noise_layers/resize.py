@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
+
 from noise_layers.crop import random_float
 
 class Resize(nn.Module):
@@ -19,8 +19,9 @@ class Resize(nn.Module):
         resize_ratio = random_float(self.resize_ratio_min, self.resize_ratio_max)
         noised_image = noised_and_cover[0]
         noised_and_cover[0] = F.interpolate(
-                                    noised_image,
-                                    scale_factor=(resize_ratio, resize_ratio),
-                                    mode=self.interpolation_method)
+            noised_image,
+            scale_factor=(resize_ratio, resize_ratio),
+            mode=self.interpolation_method
+        )
 
         return noised_and_cover

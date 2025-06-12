@@ -1,6 +1,7 @@
 import torch.nn as nn
-from options import HiDDenConfiguration
+
 from model.conv_bn_relu import ConvBNRelu
+from options import HiDDenConfiguration
 
 
 class Decoder(nn.Module):
@@ -10,7 +11,6 @@ class Decoder(nn.Module):
     such as Crop, JpegMask, and so on. See Noise layers for more.
     """
     def __init__(self, config: HiDDenConfiguration):
-
         super(Decoder, self).__init__()
         self.channels = config.decoder_channels
 
@@ -18,7 +18,6 @@ class Decoder(nn.Module):
         for _ in range(config.decoder_blocks - 1):
             layers.append(ConvBNRelu(self.channels, self.channels))
 
-        # layers.append(block_builder(self.channels, config.message_length))
         layers.append(ConvBNRelu(self.channels, config.message_length))
 
         layers.append(nn.AdaptiveAvgPool2d(output_size=(1, 1)))

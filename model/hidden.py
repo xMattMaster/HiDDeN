@@ -2,10 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from options import HiDDenConfiguration
 from model.discriminator import Discriminator
 from model.encoder_decoder import EncoderDecoder
 from noise_layers.noiser import Noiser
+from options import HiDDenConfiguration
 
 
 class Hidden:
@@ -71,7 +71,7 @@ class Hidden:
 
             # --------------Train the generator (encoder-decoder) ---------------------
             self.optimizer_enc_dec.zero_grad()
-            # target label for encoded images should be 'cover', because we want to fool the discriminator
+            # target label for encoded images should be "cover", because we want to fool the discriminator
             d_on_encoded_for_enc = self.discriminator(encoded_images)
             g_loss_adv = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
 
@@ -94,13 +94,13 @@ class Hidden:
                 batch_size * messages.shape[1])
 
         losses = {
-            'loss           ': g_loss.item(),
-            'encoder_mse    ': g_loss_enc.item(),
-            'dec_mse        ': g_loss_dec.item(),
-            'bitwise-error  ': bitwise_avg_err,
-            'adversarial_bce': g_loss_adv.item(),
-            'discr_cover_bce': d_loss_on_cover.item(),
-            'discr_encod_bce': d_loss_on_encoded.item()
+            "loss           ": g_loss.item(),
+            "encoder_mse    ": g_loss_enc.item(),
+            "dec_mse        ": g_loss_dec.item(),
+            "bitwise-error  ": bitwise_avg_err,
+            "adversarial_bce": g_loss_adv.item(),
+            "discr_cover_bce": d_loss_on_cover.item(),
+            "discr_encod_bce": d_loss_on_encoded.item()
         }
         return losses, (encoded_images, noised_images, decoded_messages)
 
@@ -148,15 +148,15 @@ class Hidden:
                 batch_size * messages.shape[1])
 
         losses = {
-            'loss'              : g_loss.item(),
-            'encoder_mse'       : g_loss_enc.item(),
-            'dec_mse'           : g_loss_dec.item(),
-            'bitwise-error'     : bitwise_avg_err,
-            'adversarial_bce'   : g_loss_adv.item(),
-            'discr_cover_bce'   : d_loss_on_cover.item(),
-            'discr_encod_bce'   : d_loss_on_encoded.item()
+            "loss"              : g_loss.item(),
+            "encoder_mse"       : g_loss_enc.item(),
+            "dec_mse"           : g_loss_dec.item(),
+            "bitwise-error"     : bitwise_avg_err,
+            "adversarial_bce"   : g_loss_adv.item(),
+            "discr_cover_bce"   : d_loss_on_cover.item(),
+            "discr_encod_bce"   : d_loss_on_encoded.item()
         }
         return losses, (encoded_images, noised_images, decoded_messages)
 
     def to_stirng(self):
-        return '{}\n{}'.format(str(self.encoder_decoder), str(self.discriminator))
+        return "{}\n{}".format(str(self.encoder_decoder), str(self.discriminator))

@@ -1,5 +1,6 @@
 import numpy as np
 import torch.nn as nn
+
 from noise_layers.identity import Identity
 from noise_layers.jpeg_compression import JpegMask
 from noise_layers.quantization import Quantization
@@ -15,9 +16,9 @@ class Noiser(nn.Module):
         self.noise_layers = [Identity()]
         for layer in noise_layers:
             if type(layer) is str:
-                if layer == 'JpegPlaceholder':
+                if layer == "JpegPlaceholder":
                     self.noise_layers.append(JpegMask(device))
-                elif layer == 'QuantizationPlaceholder':
+                elif layer == "QuantizationPlaceholder":
                     self.noise_layers.append(Quantization(device))
                 else:
                     raise ValueError(f'Wrong layer placeholder string in Noiser.__init__().'
@@ -29,4 +30,3 @@ class Noiser(nn.Module):
     def forward(self, encoded_and_cover):
         random_noise_layer = np.random.choice(self.noise_layers, 1)[0]
         return random_noise_layer(encoded_and_cover)
-

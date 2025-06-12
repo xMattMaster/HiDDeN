@@ -1,5 +1,5 @@
-from torchvision.transforms.functional import rotate
 import torch.nn as nn
+from torchvision.transforms.functional import rotate
 
 
 class Rotate(nn.Module):
