@@ -1,14 +1,14 @@
+from collections import defaultdict
+import logging
+import numpy as np
 import os
 import time
 import torch
-import numpy as np
 import utils
-import logging
-from collections import defaultdict
 
-from options import *
-from model.hidden import Hidden
 from average_meter import AverageMeter
+from model.hidden import Hidden
+from options import *
 
 
 def train(model: Hidden,
@@ -41,8 +41,8 @@ def train(model: Hidden,
     saved_images_size = (512, 512)
 
     for epoch in range(train_options.start_epoch, train_options.number_of_epochs + 1):
-        logging.info('\nStarting epoch {}/{}'.format(epoch, train_options.number_of_epochs))
-        logging.info('Batch size = {}\nSteps in epoch = {}'.format(train_options.batch_size, steps_in_epoch))
+        logging.info("\nStarting epoch {}/{}".format(epoch, train_options.number_of_epochs))
+        logging.info("Batch size = {}\nSteps in epoch = {}".format(train_options.batch_size, steps_in_epoch))
         training_losses = defaultdict(AverageMeter)
         epoch_start = time.time()
         step = 1
@@ -55,15 +55,15 @@ def train(model: Hidden,
                 training_losses[name].update(loss)
             if step % print_each == 0 or step == steps_in_epoch:
                 logging.info(
-                    'Epoch: {}/{} Step: {}/{}'.format(epoch, train_options.number_of_epochs, step, steps_in_epoch))
+                    "Epoch: {}/{} Step: {}/{}".format(epoch, train_options.number_of_epochs, step, steps_in_epoch))
                 utils.log_progress(training_losses)
-                logging.info('-' * 40)
+                logging.info("-" * 40)
             step += 1
 
         train_duration = time.time() - epoch_start
-        logging.info('Epoch {} training duration {:.2f} sec'.format(epoch, train_duration))
-        logging.info('-' * 40)
-        utils.write_losses(os.path.join(this_run_folder, 'train.csv'), training_losses, epoch, train_duration)
+        logging.info("Epoch {} training duration {:.2f} sec".format(epoch, train_duration))
+        logging.info("-" * 40)
+        utils.write_losses(os.path.join(this_run_folder, "train.csv"), training_losses, epoch, train_duration)
         if tb_logger is not None:
             tb_logger.save_losses(training_losses, epoch)
             tb_logger.save_grads(epoch)
@@ -71,7 +71,7 @@ def train(model: Hidden,
 
         first_iteration = True
         validation_losses = defaultdict(AverageMeter)
-        logging.info('Running validation for epoch {}/{}'.format(epoch, train_options.number_of_epochs))
+        logging.info("Running validation for epoch {}/{}".format(epoch, train_options.number_of_epochs))
         for image, _ in val_data:
             image = image.to(device)
             message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], hidden_config.message_length))).to(device)
@@ -85,11 +85,11 @@ def train(model: Hidden,
                 utils.save_images(image.cpu()[:images_to_save, :, :, :],
                                   encoded_images[:images_to_save, :, :, :].cpu(),
                                   epoch,
-                                  os.path.join(this_run_folder, 'images'), resize_to=saved_images_size)
+                                  os.path.join(this_run_folder, "images"), resize_to=saved_images_size)
                 first_iteration = False
 
         utils.log_progress(validation_losses)
-        logging.info('-' * 40)
-        utils.save_checkpoint(model, train_options.experiment_name, epoch, os.path.join(this_run_folder, 'checkpoints'))
-        utils.write_losses(os.path.join(this_run_folder, 'validation.csv'), validation_losses, epoch,
+        logging.info("-" * 40)
+        utils.save_checkpoint(model, train_options.experiment_name, epoch, os.path.join(this_run_folder, "checkpoints"))
+        utils.write_losses(os.path.join(this_run_folder, "validation.csv"), validation_losses, epoch,
                            time.time() - epoch_start)

@@ -1,6 +1,7 @@
 import torch.nn as nn
-from options import HiDDenConfiguration
+
 from model.conv_bn_relu import ConvBNRelu
+from options import HiDDenConfiguration
 
 class Discriminator(nn.Module):
     """

@@ -2,11 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from options import HiDDenConfiguration
 from model.discriminator import Discriminator
 from model.encoder_decoder import EncoderDecoder
-from vgg_loss import VGGLoss
 from noise_layers.noiser import Noiser
+from options import HiDDenConfiguration
 
 
 class Hidden:
@@ -24,11 +23,7 @@ class Hidden:
         self.optimizer_enc_dec = torch.optim.Adam(self.encoder_decoder.parameters())
         self.optimizer_discrim = torch.optim.Adam(self.discriminator.parameters())
 
-        if configuration.use_vgg:
-            self.vgg_loss = VGGLoss(3, 1, False)
-            self.vgg_loss.to(device)
-        else:
-            self.vgg_loss = None
+        self.vgg_loss = None
 
         self.config = configuration
         self.device = device
@@ -41,14 +36,6 @@ class Hidden:
         self.encoded_label = 0
 
         self.tb_logger = tb_logger
-        if tb_logger is not None:
-            from tensorboard_logger import TensorBoardLogger
-            encoder_final = self.encoder_decoder.encoder._modules['final_layer']
-            encoder_final.weight.register_hook(tb_logger.grad_hook_by_name('grads/encoder_out'))
-            decoder_final = self.encoder_decoder.decoder._modules['linear']
-            decoder_final.weight.register_hook(tb_logger.grad_hook_by_name('grads/decoder_out'))
-            discrim_final = self.discriminator._modules['linear']
-            discrim_final.weight.register_hook(tb_logger.grad_hook_by_name('grads/discrim_out'))
 
 
     def train_on_batch(self, batch: list):
@@ -84,11 +71,11 @@ class Hidden:
 
             # --------------Train the generator (encoder-decoder) ---------------------
             self.optimizer_enc_dec.zero_grad()
-            # target label for encoded images should be 'cover', because we want to fool the discriminator
+            # target label for encoded images should be "cover", because we want to fool the discriminator
             d_on_encoded_for_enc = self.discriminator(encoded_images)
             g_loss_adv = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
 
-            if self.vgg_loss == None:
+            if self.vgg_loss is None:
                 g_loss_enc = self.mse_loss(encoded_images, images)
             else:
                 vgg_on_cov = self.vgg_loss(images)
@@ -107,13 +94,13 @@ class Hidden:
                 batch_size * messages.shape[1])
 
         losses = {
-            'loss           ': g_loss.item(),
-            'encoder_mse    ': g_loss_enc.item(),
-            'dec_mse        ': g_loss_dec.item(),
-            'bitwise-error  ': bitwise_avg_err,
-            'adversarial_bce': g_loss_adv.item(),
-            'discr_cover_bce': d_loss_on_cover.item(),
-            'discr_encod_bce': d_loss_on_encoded.item()
+            "loss"              : g_loss.item(),
+            "encoder_mse"       : g_loss_enc.item(),
+            "dec_mse"           : g_loss_dec.item(),
+            "bitwise-error"     : bitwise_avg_err,
+            "adversarial_bce"   : g_loss_adv.item(),
+            "discr_cover_bce"   : d_loss_on_cover.item(),
+            "discr_encod_bce"   : d_loss_on_encoded.item()
         }
         return losses, (encoded_images, noised_images, decoded_messages)
 
@@ -123,15 +110,6 @@ class Hidden:
         :param batch: batch of validation data, in form [images, messages]
         :return: dictionary of error metrics from Encoder, Decoder, and Discriminator on the current batch
         """
-        # if TensorboardX logging is enabled, save some of the tensors.
-        if self.tb_logger is not None:
-            encoder_final = self.encoder_decoder.encoder._modules['final_layer']
-            self.tb_logger.add_tensor('weights/encoder_out', encoder_final.weight)
-            decoder_final = self.encoder_decoder.decoder._modules['linear']
-            self.tb_logger.add_tensor('weights/decoder_out', decoder_final.weight)
-            discrim_final = self.discriminator._modules['linear']
-            self.tb_logger.add_tensor('weights/discrim_out', discrim_final.weight)
-
         images, messages = batch
 
         batch_size = images.shape[0]
@@ -139,9 +117,9 @@ class Hidden:
         self.encoder_decoder.eval()
         self.discriminator.eval()
         with torch.no_grad():
-            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device)
-            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device)
-            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device)
+            d_target_label_cover = torch.full((batch_size, 1), self.cover_label, device=self.device).float()
+            d_target_label_encoded = torch.full((batch_size, 1), self.encoded_label, device=self.device).float()
+            g_target_label_encoded = torch.full((batch_size, 1), self.cover_label, device=self.device).float()
 
             d_on_cover = self.discriminator(images)
             d_loss_on_cover = self.bce_with_logits_loss(d_on_cover, d_target_label_cover)
@@ -170,15 +148,15 @@ class Hidden:
                 batch_size * messages.shape[1])
 
         losses = {
-            'loss           ': g_loss.item(),
-            'encoder_mse    ': g_loss_enc.item(),
-            'dec_mse        ': g_loss_dec.item(),
-            'bitwise-error  ': bitwise_avg_err,
-            'adversarial_bce': g_loss_adv.item(),
-            'discr_cover_bce': d_loss_on_cover.item(),
-            'discr_encod_bce': d_loss_on_encoded.item()
+            "loss"              : g_loss.item(),
+            "encoder_mse"       : g_loss_enc.item(),
+            "dec_mse"           : g_loss_dec.item(),
+            "bitwise-error"     : bitwise_avg_err,
+            "adversarial_bce"   : g_loss_adv.item(),
+            "discr_cover_bce"   : d_loss_on_cover.item(),
+            "discr_encod_bce"   : d_loss_on_encoded.item()
         }
         return losses, (encoded_images, noised_images, decoded_messages)
 
     def to_stirng(self):
-        return '{}\n{}'.format(str(self.encoder_decoder), str(self.discriminator))
+        return "{}\n{}".format(str(self.encoder_decoder), str(self.discriminator))

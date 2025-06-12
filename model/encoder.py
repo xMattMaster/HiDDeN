@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 from options import HiDDenConfiguration
 from model.conv_bn_relu import ConvBNRelu
 
@@ -23,12 +24,12 @@ class Encoder(nn.Module):
 
         self.conv_layers = nn.Sequential(*layers)
         self.after_concat_layer = ConvBNRelu(self.conv_channels + 3 + config.message_length,
-                                             self.conv_channels)
+            self.conv_channels
+        )
 
         self.final_layer = nn.Conv2d(self.conv_channels, 3, kernel_size=1)
 
     def forward(self, image, message):
-
         # First, add two dummy dimensions in the end of the message.
         # This is required for the .expand to work correctly
         expanded_message = message.unsqueeze(-1)

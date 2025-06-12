@@ -17,7 +17,8 @@ def transform(tensor, target_range):
 class Quantization(nn.Module):
     def __init__(self, device=None):
         super(Quantization, self).__init__()
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        if device is None:
+            device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
         self.min_value = 0.0
         self.max_value = 255.0
@@ -30,7 +31,6 @@ class Quantization(nn.Module):
 
 
     def fourier_rounding(self, tensor):
-        shape = tensor.shape
         z = torch.mul(self.weights, torch.sin(torch.mul(tensor, self.scales)))
         z = torch.sum(z, dim=0)
         return tensor + z
@@ -54,17 +54,17 @@ class Quantization(nn.Module):
 #     # max_value = 255.0
 #     data = torch.rand((12, 3, 64, 64))
 #     data = (max_value - min_value) * data + min_value
-#     print(f'data.min(): {data.min()}')
-#     print(f'data.max(): {data.max()}')
-#     print(f'data.avg(): {data.mean()}')
+#     print(f"data.min(): {data.min()}")
+#     print(f"data.max(): {data.max()}")
+#     print(f"data.avg(): {data.mean()}")
 #     data_tf, _ = qq.forward([data, None])
-#     print('perform quantization')
-#     print(f'data.min(): {data_tf.min()}')
-#     print(f'data.max(): {data_tf.max()}')
-#     print(f'data.avg(): {data_tf.mean()}')
+#     print("perform quantization")
+#     print(f"data.min(): {data_tf.min()}")
+#     print(f"data.max(): {data_tf.max()}")
+#     print(f"data.avg(): {data_tf.mean()}")
 #
-#     print(f'mse diff:  {np.mean((data.numpy()-data_tf.numpy())**2)}')
-#     print(f'mabs diff: {np.mean(np.abs(data.numpy()-data_tf.numpy()))}')
+#     print(f"mse diff:  {np.mean((data.numpy()-data_tf.numpy())**2)}")
+#     print(f"mabs diff: {np.mean(np.abs(data.numpy()-data_tf.numpy()))}")
 #
-# if __name__ == '__main__':
+# if __name__ == "__main__":
 #     main()
