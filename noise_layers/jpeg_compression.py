@@ -97,7 +97,6 @@ class JpegMask(nn.Module):
 
 
     def apply_conv(self, image, filter_type: str):
-
         if filter_type == "dct":
             filters = self.dct_conv_weights
         elif filter_type == "idct":
@@ -127,7 +126,6 @@ class JpegMask(nn.Module):
 
 
     def forward(self, noised_and_cover):
-
         noised_image = noised_and_cover[0]
         # pad the image so that we can do dct on 8x8 blocks
         pad_height = (8 - noised_image.shape[2] % 8) % 8
@@ -151,7 +149,7 @@ class JpegMask(nn.Module):
 
         # apply inverse dct (idct)
         image_idct = self.apply_conv(image_dct_mask, "idct")
-        # transform from yuv to to rgb
+        # transform from yuv to rgb
         image_ret_padded = torch.empty_like(image_dct)
         yuv2rgb(image_idct, image_ret_padded)
 

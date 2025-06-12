@@ -22,16 +22,16 @@ def randomCrop(img, height, width):
     return img
 
 
-def image_tensor_to_numpy(encoded_images):
-    watermarked_images = encoded_images[:encoded_images.shape[0], :, :, :].cpu()
+def image_tensor_to_numpy(encoded_images: torch.Tensor):
+    tensor_images = encoded_images.cpu()
 
     # scale values to range [0, 1] from original range of [-1, 1]
-    watermarked_images = (watermarked_images + 1) / 2
-    watermarked_images = watermarked_images.permute(0, 2, 3, 1)
+    tensor_images = (tensor_images + 1) / 2
+    tensor_images = tensor_images.permute(0, 2, 3, 1)
 
-    watermarked_images = watermarked_images.detach().cpu().numpy()
+    tensor_images = tensor_images.detach().cpu().numpy()
 
-    return watermarked_images[0]
+    return tensor_images[0]
 
 
 def images_diff_plot(cover_image, encoded_image):

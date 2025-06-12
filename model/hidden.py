@@ -75,7 +75,7 @@ class Hidden:
             d_on_encoded_for_enc = self.discriminator(encoded_images)
             g_loss_adv = self.bce_with_logits_loss(d_on_encoded_for_enc, g_target_label_encoded)
 
-            if self.vgg_loss == None:
+            if self.vgg_loss is None:
                 g_loss_enc = self.mse_loss(encoded_images, images)
             else:
                 vgg_on_cov = self.vgg_loss(images)
@@ -94,13 +94,13 @@ class Hidden:
                 batch_size * messages.shape[1])
 
         losses = {
-            "loss           ": g_loss.item(),
-            "encoder_mse    ": g_loss_enc.item(),
-            "dec_mse        ": g_loss_dec.item(),
-            "bitwise-error  ": bitwise_avg_err,
-            "adversarial_bce": g_loss_adv.item(),
-            "discr_cover_bce": d_loss_on_cover.item(),
-            "discr_encod_bce": d_loss_on_encoded.item()
+            "loss"              : g_loss.item(),
+            "encoder_mse"       : g_loss_enc.item(),
+            "dec_mse"           : g_loss_dec.item(),
+            "bitwise-error"     : bitwise_avg_err,
+            "adversarial_bce"   : g_loss_adv.item(),
+            "discr_cover_bce"   : d_loss_on_cover.item(),
+            "discr_encod_bce"   : d_loss_on_encoded.item()
         }
         return losses, (encoded_images, noised_images, decoded_messages)
 

@@ -17,7 +17,8 @@ def transform(tensor, target_range):
 class Quantization(nn.Module):
     def __init__(self, device=None):
         super(Quantization, self).__init__()
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        if device is None:
+            device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
         self.min_value = 0.0
         self.max_value = 255.0
@@ -30,7 +31,6 @@ class Quantization(nn.Module):
 
 
     def fourier_rounding(self, tensor):
-        shape = tensor.shape
         z = torch.mul(self.weights, torch.sin(torch.mul(tensor, self.scales)))
         z = torch.sum(z, dim=0)
         return tensor + z
